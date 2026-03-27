@@ -1,4 +1,3 @@
-
 FROM ghcr.io/zephyrproject-rtos/zephyr-build:v0.28.7
 
 # Directory where the Zephyr tree will live in the image
@@ -10,7 +9,7 @@ USER root
 
 RUN <<EOF
     # Install base packages
-    apt-get update 
+    apt-get update
     apt-get install -y libjson-xs-perl git curl ca-certificates wget gnupg apt-transport-https python3-pip python3 python-is-python3
     mkdir -p /etc/apt/keyrings
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
@@ -107,32 +106,32 @@ RUN <<EOF
         libxcb-keysyms1 \
         libxcb-image0 \
         libxkbcommon-x11-0
-    
+
     # Download J-Link DEB package (version 8.10 or later recommended)
     JLINK_VERSION=V810b
     wget --post-data="accept_license_agreement=accepted" \
          -O /tmp/jlink.deb \
          https://www.segger.com/downloads/jlink/JLink_Linux_${JLINK_VERSION}_x86_64.deb
-    
+
     # Extract the DEB package
     dpkg-deb -x /tmp/jlink.deb /tmp/jlink-extracted
-    
+
     # Copy J-Link files to their proper locations
     cp -a /tmp/jlink-extracted/opt/SEGGER /opt/
     cp -a /tmp/jlink-extracted/usr/bin/* /usr/bin/ || true
     cp -a /tmp/jlink-extracted/usr/share/* /usr/share/ || true
-    
+
     # Copy udev rules if they exist in the package
     if [ -d /tmp/jlink-extracted/etc/udev/rules.d ]; then
         mkdir -p /etc/udev/rules.d
         cp -a /tmp/jlink-extracted/etc/udev/rules.d/* /etc/udev/rules.d/ || true
     fi
-    
+
     # Clean up
     rm -rf /tmp/jlink.deb /tmp/jlink-extracted
     apt-get clean
     rm -rf /var/lib/apt/lists/*
-    
+
     # Verify installation
     which JLinkExe
     /opt/SEGGER/JLink/JLinkExe -v || true
@@ -145,7 +144,7 @@ RUN <<EOF
 # Segger J-Link
 SUBSYSTEM=="usb", ATTR{idVendor}=="1366", MODE="0666", GROUP="plugdev"
 UDEV_EOF
-    
+
     chmod 644 /etc/udev/rules.d/99-jlink.rules
 EOF
 
@@ -158,7 +157,7 @@ RUN <<EOF
     cp -aR /opt/renode-git/output/bin/Debug /opt/renode
     cp -aR /opt/renode-git/scripts /opt/renode
     cp -aR /opt/renode-git/platforms /opt/renode
-    chmod -R 777 /opt/renode 
+    chmod -R 777 /opt/renode
     chmod -R 777 /opt/renode-git
     chown -R user:user /opt/renode
     chown -R user:user /opt/renode-git
@@ -168,30 +167,30 @@ RUN <<EOF
     # Install Rust toolchain for building MCP server
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
     . /root/.cargo/env
-    
+
     # Install additional dependencies for embedded-debugger-mcp
     apt-get update
     apt-get install -y libudev-dev
     apt-get clean
     rm -rf /var/lib/apt/lists/*
-    
+
     # Clone and build embedded-debugger-mcp
     cd /tmp
     git clone --depth 1 https://github.com/Adancurusul/embedded-debugger-mcp.git
     cd embedded-debugger-mcp
-    
+
     # Build with gold linker to avoid architecture mismatch issues
     RUSTFLAGS="-C link-arg=-fuse-ld=gold" /root/.cargo/bin/cargo build --release
-    
+
     # Install the binary to system location
     install -m 755 target/release/embedded-debugger-mcp /usr/local/bin/embedded-debugger-mcp
-    
+
     # Clean up build artifacts
     cd /
     rm -rf /tmp/embedded-debugger-mcp
     rm -rf /root/.cargo/registry
     rm -rf /root/.cargo/git
-    
+
     # Verify installation
     /usr/local/bin/embedded-debugger-mcp --version || echo "MCP server installed successfully"
 EOF
