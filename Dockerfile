@@ -82,6 +82,7 @@ RUN <<EOF
         libgtk-3-dev \
         libicu-dev \
         libssl-dev \
+        libusb-1.0-0-dev \
         libxml2-dev \
         minicom \
         mono-complete \
@@ -91,7 +92,9 @@ RUN <<EOF
         python3-tk \
         screen \
         tmux \
+        udev \
         uml-utilities \
+        whiptail \
         zlib1g-dev
     apt-get clean
     rm -rf /var/lib/apt/lists/*
