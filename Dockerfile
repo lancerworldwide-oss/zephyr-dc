@@ -64,6 +64,7 @@ RUN <<EOF
         coreutils \
         dotnet-sdk-10.0 \
         doxygen \
+        golang-go \
         graphviz \
         mscgen \
         plantuml \
@@ -99,6 +100,8 @@ RUN <<EOF
     apt-get clean
     rm -rf /var/lib/apt/lists/*
 EOF
+
+RUN go install github.com/apache/mynewt-mcumgr-cli/mcumgr@latest
 
 RUN <<EOF
     # Install Segger J-Link tools for hardware flashing (8.10 or later recommended)
