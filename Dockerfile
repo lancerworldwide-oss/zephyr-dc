@@ -92,8 +92,10 @@ RUN <<EOF
         policykit-1 \
         python3-tk \
         screen \
+        tio \
         tmux \
         udev \
+        udhcpc \
         uml-utilities \
         whiptail \
         zlib1g-dev
