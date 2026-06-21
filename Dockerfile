@@ -85,6 +85,7 @@ RUN <<EOF
         libssl-dev \
         libusb-1.0-0-dev \
         libxml2-dev \
+        lrzsz \
         minicom \
         mono-complete \
         nano \
@@ -98,6 +99,7 @@ RUN <<EOF
         udhcpc \
         uml-utilities \
         whiptail \
+        xxd \
         zlib1g-dev
     apt-get clean
     rm -rf /var/lib/apt/lists/*
