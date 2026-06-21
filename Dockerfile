@@ -116,7 +116,7 @@ RUN <<EOF
         libxkbcommon-x11-0
 
     # Download J-Link DEB package (version 8.10 or later recommended)
-    JLINK_VERSION=V810b
+    JLINK_VERSION=V952
     wget --post-data="accept_license_agreement=accepted" \
          -O /tmp/jlink.deb \
          https://www.segger.com/downloads/jlink/JLink_Linux_${JLINK_VERSION}_x86_64.deb
