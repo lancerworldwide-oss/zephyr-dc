@@ -1,4 +1,4 @@
-FROM ghcr.io/zephyrproject-rtos/zephyr-build:v0.28.7
+FROM ghcr.io/zephyrproject-rtos/zephyr-build:v0.29.2
 
 # Directory where the Zephyr tree will live in the image
 ENV ZEPHYR_WORKSPACE=/opt/zephyrproject
