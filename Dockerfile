@@ -28,7 +28,7 @@ RUN python3 -m pip install git+https://github.com/antmicro/dts2repl.git@c281274
 
 USER user
 
-RUN west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.3.1 .
+RUN west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.4.0 .
 
 RUN west update --fetch=smart --narrow -o=--depth=1
 
@@ -111,7 +111,7 @@ RUN set -eux; \
       "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"; \
     unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'; \
     rm -f /tmp/protoc.zip /opt/protoc/bin/protoc; \
-    chmod +x /usr/local/bin/protoc; 
+    chmod +x /usr/local/bin/protoc;
 
 RUN GOPATH=/usr/local go install github.com/apache/mynewt-mcumgr-cli/mcumgr@latest
 
@@ -237,8 +237,6 @@ RUN <<EOF
     cargo-flash --version
     cargo-embed --version
 EOF
-
-RUN rm -rf /workdir
 
 USER user
 
