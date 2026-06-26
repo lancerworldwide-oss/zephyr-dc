@@ -105,6 +105,14 @@ RUN <<EOF
     rm -rf /var/lib/apt/lists/*
 EOF
 
+ARG PROTOC_VERSION=33.5
+RUN set -eux; \
+    curl -fsSL -o /tmp/protoc.zip \
+      "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip"; \
+    unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'; \
+    rm -f /tmp/protoc.zip /opt/protoc/bin/protoc; \
+    chmod +x /usr/local/bin/protoc; 
+
 RUN GOPATH=/usr/local go install github.com/apache/mynewt-mcumgr-cli/mcumgr@latest
 
 RUN <<EOF
