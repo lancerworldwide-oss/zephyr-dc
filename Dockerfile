@@ -1,4 +1,4 @@
-FROM ghcr.io/zephyrproject-rtos/zephyr-build:v0.29.0
+FROM ghcr.io/zephyrproject-rtos/zephyr-build:v0.28.7
 
 # Directory where the Zephyr tree will live in the image
 ENV ZEPHYR_WORKSPACE=/opt/zephyrproject
@@ -28,7 +28,7 @@ RUN python3 -m pip install git+https://github.com/antmicro/dts2repl.git@c281274
 
 USER user
 
-RUN west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.4.0 .
+RUN west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.3.1 .
 
 RUN west update --fetch=smart --narrow -o=--depth=1
 
