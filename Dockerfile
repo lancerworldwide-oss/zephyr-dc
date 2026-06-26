@@ -28,7 +28,7 @@ RUN python3 -m pip install git+https://github.com/antmicro/dts2repl.git@c281274
 
 USER user
 
-RUN west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.3-branch .
+RUN west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.3 .
 
 RUN west update --fetch=smart --narrow -o=--depth=1
 
@@ -204,6 +204,33 @@ RUN <<EOF
     # Verify installation
     /usr/local/bin/embedded-debugger-mcp --version || echo "MCP server installed successfully"
 EOF
+
+RUN <<EOF
+    # Install probe-rs tools (probe-rs, cargo-flash, cargo-embed)
+    PROBE_RS_VERSION=v0.31.0
+    PROBE_RS_ARCHIVE=probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz
+    wget -q -O /tmp/probe-rs-tools.tar.xz \
+        https://github.com/probe-rs/probe-rs/releases/download/${PROBE_RS_VERSION}/${PROBE_RS_ARCHIVE}
+    mkdir -p /tmp/probe-rs-extracted
+    tar -xJf /tmp/probe-rs-tools.tar.xz -C /tmp/probe-rs-extracted
+    # Install all extracted binaries to /usr/local/bin/ for system-wide access
+    find /tmp/probe-rs-extracted -maxdepth 2 -type f -executable \
+        -exec install -m 755 {} /usr/local/bin/ \;
+    rm -rf /tmp/probe-rs-tools.tar.xz /tmp/probe-rs-extracted
+
+    # Install udev rules for USB probe device access
+    mkdir -p /etc/udev/rules.d
+    curl -fsSL https://probe.rs/files/69-probe-rs.rules \
+        -o /etc/udev/rules.d/69-probe-rs.rules
+    chmod 644 /etc/udev/rules.d/69-probe-rs.rules
+
+    # Verify installation
+    probe-rs --version
+    cargo-flash --version
+    cargo-embed --version
+EOF
+
+RUN rm -rf /workdir
 
 USER user
 
