@@ -238,6 +238,18 @@ RUN <<EOF
     cargo-embed --version
 EOF
 
+RUN <<EOF
+    # add user to the plugdev and dialout group
+    if ! getent group plugdev > /dev/null; then
+        groupadd -r plugdev
+    fi
+    if ! getent group dialout > /dev/null; then
+        groupadd -r dialout
+    fi
+    usermod -a -G dialout user
+    usermod -a -G plugdev user
+EOF
+
 USER user
 
 # Set ZEPHYR_BASE so west builds are ready out-of-the-box
