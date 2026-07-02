@@ -62,6 +62,7 @@ RUN <<EOF
         cppcheck \
         cpplint \
         coreutils \
+        default-jre \
         dotnet-sdk-10.0 \
         doxygen \
         golang-go \
@@ -112,6 +113,15 @@ RUN set -eux; \
     unzip -o /tmp/protoc.zip -d /usr/local bin/protoc 'include/*'; \
     rm -f /tmp/protoc.zip /opt/protoc/bin/protoc; \
     chmod +x /usr/local/bin/protoc;
+
+ARG ANTLR_VERSION=4.13.2
+RUN set -eux; \
+    curl -fsSL -o /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar \
+      "https://www.antlr.org/download/antlr-${ANTLR_VERSION}-complete.jar"; \
+    printf '#!/bin/sh\nexec java -jar /usr/local/lib/antlr-%s-complete.jar "$@"\n' "${ANTLR_VERSION}" > /usr/local/bin/antlr4; \
+    printf '#!/bin/sh\nexec java -cp "/usr/local/lib/antlr-%s-complete.jar:$CLASSPATH" org.antlr.v4.gui.TestRig "$@"\n' "${ANTLR_VERSION}" > /usr/local/bin/grun; \
+    chmod +x /usr/local/bin/antlr4 /usr/local/bin/grun; \
+    java -jar /usr/local/lib/antlr-${ANTLR_VERSION}-complete.jar || true
 
 RUN GOPATH=/usr/local go install github.com/apache/mynewt-mcumgr-cli/mcumgr@latest
 
@@ -255,6 +265,7 @@ USER user
 # Set ZEPHYR_BASE so west builds are ready out-of-the-box
 ENV ZEPHYR_BASE=${ZEPHYR_WORKSPACE}/zephyr
 ENV DISPLAY=host.docker.internal:0.0
+ENV CLASSPATH=".:/usr/local/lib/antlr-4.13.2-complete.jar:${CLASSPATH}"
 # Optionally set default toolchain variant if not already set by base image
 # ENV ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb
 USER user
