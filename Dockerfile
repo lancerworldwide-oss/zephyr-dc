@@ -94,6 +94,7 @@ RUN <<EOF
         policykit-1 \
         python3-tk \
         screen \
+        telnet \
         tio \
         tmux \
         udev \
