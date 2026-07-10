@@ -94,6 +94,7 @@ RUN <<EOF
         pkg-config \
         policykit-1 \
         python3-tk \
+        ripgrep \
         screen \
         telnet \
         tio \
