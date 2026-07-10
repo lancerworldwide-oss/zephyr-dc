@@ -59,6 +59,7 @@ RUN <<EOF
         clang-format \
         clang-tidy \
         cmake \
+        cmake-curses-gui \
         cppcheck \
         cpplint \
         coreutils \
