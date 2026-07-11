@@ -64,6 +64,7 @@ RUN <<EOF
         cpplint \
         coreutils \
         default-jre \
+        dialog \
         dotnet-sdk-10.0 \
         doxygen \
         golang-go \
