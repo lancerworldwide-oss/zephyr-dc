@@ -94,6 +94,7 @@ RUN <<EOF
         nano \
         pkg-config \
         policykit-1 \
+        psmisc \
         python3-tk \
         ripgrep \
         screen \
