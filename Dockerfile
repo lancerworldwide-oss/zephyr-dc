@@ -75,6 +75,7 @@ RUN <<EOF
         gtk-sharp3 \
         gtk-sharp2 \
         htop \
+        jq \
         libgtk2.0-dev \
         libc6-dev \
         libtool \
@@ -251,6 +252,45 @@ RUN <<EOF
     probe-rs --version
     cargo-flash --version
     cargo-embed --version
+EOF
+
+ARG CODEQL_VERSION=latest
+RUN <<EOF
+    # Install CodeQL CLI (latest by default, override with --build-arg CODEQL_VERSION=<version>)
+    set -eu
+
+    ARCH="$(uname -m)"
+    case "${ARCH}" in
+        x86_64) CODEQL_ARCH="x64" ;;
+        aarch64) CODEQL_ARCH="arm64" ;;
+        *)
+            echo "Unsupported architecture for CodeQL: ${ARCH}" >&2
+            exit 1
+            ;;
+    esac
+
+    if [ "${CODEQL_VERSION}" = "latest" ]; then
+        RELEASE_API="https://api.github.com/repos/github/codeql-cli-binaries/releases/latest"
+    else
+        RELEASE_API="https://api.github.com/repos/github/codeql-cli-binaries/releases/tags/v${CODEQL_VERSION}"
+    fi
+
+    RELEASE_JSON="$(curl -fsSL "${RELEASE_API}")"
+    DOWNLOAD_URL="$(printf '%s' "${RELEASE_JSON}" | jq -r --arg arch "${CODEQL_ARCH}" '.assets[] | select(.name | endswith("linux-\($arch).zip")) | .browser_download_url' | head -n 1)"
+
+    if [ -z "${DOWNLOAD_URL}" ] || [ "${DOWNLOAD_URL}" = "null" ]; then
+        echo "Could not find a CodeQL Linux asset for architecture ${CODEQL_ARCH}" >&2
+        exit 1
+    fi
+
+    curl -fsSL -o /tmp/codeql.zip "${DOWNLOAD_URL}"
+    rm -rf /opt/codeql
+    unzip -q /tmp/codeql.zip -d /opt
+    ln -sf /opt/codeql/codeql /usr/local/bin/codeql
+
+    codeql version
+
+    rm -f /tmp/codeql.zip
 EOF
 
 RUN <<EOF
