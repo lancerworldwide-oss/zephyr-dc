@@ -53,6 +53,17 @@ Add a Streamable HTTP MCP server pointing at the container:
 
 If `ZEPHYR_DC_API_TOKEN` is set, include the bearer token in the client auth headers.
 
+### Dev Containers
+
+VS Code / Cursor Dev Containers replace the image `ENTRYPOINT` with a keep-alive process, so MCP does **not** start from PID 1. Consumer projects should:
+
+1. Call `/usr/local/bin/zephyr-dc-mcp-start` from `postStartCommand` (see `zephyr-dc-mcp-start`; waits for `GET /health`).
+2. Forward port `8765` in `devcontainer.json` (`forwardPorts`).
+
+Do not background `/usr/local/bin/zephyr-dc-entrypoint.sh` from `postStart` — that script chains to an interactive shell and is for `docker run`, not Dev Containers.
+
+After changing MCP install or start scripts in this repo, rebuild and push (or load) `ghcr.io/lancerworldwide-oss/zephyr-dc:latest`, then rebuild the consumer Dev Container.
+
 Useful tools include `west_build_start`, `twister_run_start`, `renode_run_start`, `cppcheck_start`, `coverage_report_start`, `doxygen_run_start`, `job_wait`, and `agent_run`.
 
 ## OpenAI-compatible HTTP (n8n / scripts)

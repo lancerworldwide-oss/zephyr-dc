@@ -331,7 +331,8 @@ RUN <<EOF
 EOF
 
 COPY entrypoint.sh /usr/local/bin/zephyr-dc-entrypoint.sh
-RUN chmod 755 /usr/local/bin/zephyr-dc-entrypoint.sh
+COPY scripts/zephyr-dc-mcp-start.sh /usr/local/bin/zephyr-dc-mcp-start
+RUN chmod 755 /usr/local/bin/zephyr-dc-entrypoint.sh /usr/local/bin/zephyr-dc-mcp-start
 
 USER user
 
