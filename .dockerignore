@@ -1,0 +1,7 @@
+# Ignore local Python artifacts if building from a developer machine
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/venv/
+**/.venv/
+**/*.egg-info/

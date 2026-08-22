@@ -67,8 +67,10 @@ RUN <<EOF
         dialog \
         dotnet-sdk-10.0 \
         doxygen \
+        flawfinder \
         golang-go \
         graphviz \
+        lcov \
         mscgen \
         plantuml \
         gcc \
@@ -90,6 +92,7 @@ RUN <<EOF
         libusb-1.0-0-dev \
         libxml2-dev \
         lrzsz \
+        ltrace \
         minicom \
         mono-complete \
         nano \
@@ -99,6 +102,7 @@ RUN <<EOF
         python3-tk \
         ripgrep \
         screen \
+        strace \
         telnet \
         tio \
         tmux \
@@ -305,12 +309,39 @@ RUN <<EOF
     usermod -a -G plugdev user
 EOF
 
+USER root
+
+# Install zephyr-dc-mcp (firmware MCP + OpenAI agent) into an isolated venv
+COPY mcp /opt/zephyr-dc-mcp-src
+RUN <<EOF
+    set -eux
+    python3 -m venv /opt/zephyr-dc-mcp/venv
+    /opt/zephyr-dc-mcp/venv/bin/pip install --upgrade pip
+    /opt/zephyr-dc-mcp/venv/bin/pip install /opt/zephyr-dc-mcp-src gcovr
+    # Ensure CLI tools from the venv are discoverable
+    ln -sf /opt/zephyr-dc-mcp/venv/bin/zephyr-dc-mcp /usr/local/bin/zephyr-dc-mcp
+    ln -sf /opt/zephyr-dc-mcp/venv/bin/gcovr /usr/local/bin/gcovr
+    chown -R user:user /opt/zephyr-dc-mcp /opt/zephyr-dc-mcp-src
+    /opt/zephyr-dc-mcp/venv/bin/python -c "import zephyr_dc_mcp; from zephyr_dc_mcp.tools import register_all_tools; register_all_tools(); from zephyr_dc_mcp.registry import list_tools; assert list_tools(); print(zephyr_dc_mcp.__version__, len(list_tools()), 'tools')"
+EOF
+
+COPY entrypoint.sh /usr/local/bin/zephyr-dc-entrypoint.sh
+RUN chmod 755 /usr/local/bin/zephyr-dc-entrypoint.sh
+
 USER user
 
 # Set ZEPHYR_BASE so west builds are ready out-of-the-box
 ENV ZEPHYR_BASE=${ZEPHYR_WORKSPACE}/zephyr
 ENV DISPLAY=host.docker.internal:0.0
 ENV CLASSPATH=".:/usr/local/lib/antlr-4.13.2-complete.jar:${CLASSPATH}"
+ENV ZEPHYR_DC_MCP_HOST=0.0.0.0
+ENV ZEPHYR_DC_MCP_PORT=8765
+ENV ZEPHYR_DC_MCP_BIN=/opt/zephyr-dc-mcp/venv/bin/zephyr-dc-mcp
 # Optionally set default toolchain variant if not already set by base image
 # ENV ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb
-USER user
+
+EXPOSE 8765
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD curl -fsS "http://127.0.0.1:${ZEPHYR_DC_MCP_PORT}/health" || exit 1
+
+ENTRYPOINT ["/usr/local/bin/zephyr-dc-entrypoint.sh"]
