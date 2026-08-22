@@ -261,31 +261,36 @@ EOF
 ARG CODEQL_VERSION=latest
 RUN <<EOF
     # Install CodeQL CLI (latest by default, override with --build-arg CODEQL_VERSION=<version>)
-    set -eu
+    # Official Linux asset is codeql-linux64.zip (x86_64 only; no official linux aarch64 package).
+    set -eux
 
     ARCH="$(uname -m)"
     case "${ARCH}" in
-        x86_64) CODEQL_ARCH="x64" ;;
-        aarch64) CODEQL_ARCH="arm64" ;;
+        x86_64) CODEQL_ASSET="codeql-linux64.zip" ;;
         *)
-            echo "Unsupported architecture for CodeQL: ${ARCH}" >&2
+            echo "CodeQL CLI has no official Linux package for ${ARCH} (need x86_64 / codeql-linux64.zip)" >&2
             exit 1
             ;;
     esac
 
     if [ "${CODEQL_VERSION}" = "latest" ]; then
         RELEASE_API="https://api.github.com/repos/github/codeql-cli-binaries/releases/latest"
+        if ! RELEASE_JSON="$(curl -fsSL "${RELEASE_API}")"; then
+            echo "Failed to fetch CodeQL release metadata from ${RELEASE_API}" >&2
+            exit 1
+        fi
+        TAG="$(printf '%s' "${RELEASE_JSON}" | jq -r .tag_name)"
+        if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
+            echo "Could not resolve CodeQL latest tag_name from GitHub API" >&2
+            printf '%s\n' "${RELEASE_JSON}" | head -c 500 >&2 || true
+            exit 1
+        fi
     else
-        RELEASE_API="https://api.github.com/repos/github/codeql-cli-binaries/releases/tags/v${CODEQL_VERSION}"
+        TAG="v${CODEQL_VERSION#v}"
     fi
 
-    RELEASE_JSON="$(curl -fsSL "${RELEASE_API}")"
-    DOWNLOAD_URL="$(printf '%s' "${RELEASE_JSON}" | jq -r --arg arch "${CODEQL_ARCH}" '.assets[] | select(.name | endswith("linux-\($arch).zip")) | .browser_download_url' | head -n 1)"
-
-    if [ -z "${DOWNLOAD_URL}" ] || [ "${DOWNLOAD_URL}" = "null" ]; then
-        echo "Could not find a CodeQL Linux asset for architecture ${CODEQL_ARCH}" >&2
-        exit 1
-    fi
+    DOWNLOAD_URL="https://github.com/github/codeql-cli-binaries/releases/download/${TAG}/${CODEQL_ASSET}"
+    echo "Downloading CodeQL ${TAG} from ${DOWNLOAD_URL}"
 
     curl -fsSL -o /tmp/codeql.zip "${DOWNLOAD_URL}"
     rm -rf /opt/codeql
