@@ -55,48 +55,52 @@ RUN <<EOF
     apt-get install -y \
         automake \
         build-essential \
-        clang-tools \
         clang-format \
         clang-tidy \
+        clang-tools \
         cmake \
         cmake-curses-gui \
+        coreutils \
         cppcheck \
         cpplint \
-        coreutils \
         default-jre \
         dialog \
         dotnet-sdk-10.0 \
         doxygen \
-        flawfinder \
+        gcc \
+        binutils-mingw-w64-x86-64 \
+        gcc-mingw-w64-x86-64 \
+        g++-mingw-w64-x86-64 \
         golang-go \
         graphviz \
-        lcov \
-        mscgen \
-        plantuml \
-        gcc \
-        gtk-sharp3 \
         gtk-sharp2 \
+        gtk-sharp3 \
         htop \
         jq \
-        libgtk2.0-dev \
-        libc6-dev \
-        libtool \
-        libffi-dev \
-        libglib2.0-dev \
-        libgdk-pixbuf2.0-dev \
-        libpango1.0-dev \
+        kmod \
         libatk1.0-dev \
+        libc6-dev \
+        libffi-dev \
+        libgdk-pixbuf2.0-dev \
+        libglib2.0-dev \
         libgtk-3-dev \
+        libgtk2.0-dev \
         libicu-dev \
+        libpango1.0-dev \
         libssl-dev \
+        libtool \
         libusb-1.0-0-dev \
         libxml2-dev \
+        mingw-w64 \
+        linux-tools-generic \
         lrzsz \
         ltrace \
         minicom \
         mono-complete \
+        mscgen \
         nano \
         pkg-config \
+        plantuml \
         policykit-1 \
         psmisc \
         python3-tk \
@@ -109,6 +113,8 @@ RUN <<EOF
         udev \
         udhcpc \
         uml-utilities \
+        unzip \
+        usbip \
         whiptail \
         xxd \
         zlib1g-dev
@@ -261,36 +267,31 @@ EOF
 ARG CODEQL_VERSION=latest
 RUN <<EOF
     # Install CodeQL CLI (latest by default, override with --build-arg CODEQL_VERSION=<version>)
-    # Official Linux asset is codeql-linux64.zip (x86_64 only; no official linux aarch64 package).
-    set -eux
+    set -eu
 
     ARCH="$(uname -m)"
     case "${ARCH}" in
-        x86_64) CODEQL_ASSET="codeql-linux64.zip" ;;
+        x86_64) CODEQL_ARCH="x64" ;;
+        aarch64) CODEQL_ARCH="arm64" ;;
         *)
-            echo "CodeQL CLI has no official Linux package for ${ARCH} (need x86_64 / codeql-linux64.zip)" >&2
+            echo "Unsupported architecture for CodeQL: ${ARCH}" >&2
             exit 1
             ;;
     esac
 
     if [ "${CODEQL_VERSION}" = "latest" ]; then
         RELEASE_API="https://api.github.com/repos/github/codeql-cli-binaries/releases/latest"
-        if ! RELEASE_JSON="$(curl -fsSL "${RELEASE_API}")"; then
-            echo "Failed to fetch CodeQL release metadata from ${RELEASE_API}" >&2
-            exit 1
-        fi
-        TAG="$(printf '%s' "${RELEASE_JSON}" | jq -r .tag_name)"
-        if [ -z "${TAG}" ] || [ "${TAG}" = "null" ]; then
-            echo "Could not resolve CodeQL latest tag_name from GitHub API" >&2
-            printf '%s\n' "${RELEASE_JSON}" | head -c 500 >&2 || true
-            exit 1
-        fi
     else
-        TAG="v${CODEQL_VERSION#v}"
+        RELEASE_API="https://api.github.com/repos/github/codeql-cli-binaries/releases/tags/v${CODEQL_VERSION}"
     fi
 
-    DOWNLOAD_URL="https://github.com/github/codeql-cli-binaries/releases/download/${TAG}/${CODEQL_ASSET}"
-    echo "Downloading CodeQL ${TAG} from ${DOWNLOAD_URL}"
+    RELEASE_JSON="$(curl -fsSL "${RELEASE_API}")"
+    DOWNLOAD_URL="$(printf '%s' "${RELEASE_JSON}" | jq -r --arg arch "${CODEQL_ARCH}" '.assets[] | select(.name | endswith("linux-\($arch).zip")) | .browser_download_url' | head -n 1)"
+
+    if [ -z "${DOWNLOAD_URL}" ] || [ "${DOWNLOAD_URL}" = "null" ]; then
+        echo "Could not find a CodeQL Linux asset for architecture ${CODEQL_ARCH}" >&2
+        exit 1
+    fi
 
     curl -fsSL -o /tmp/codeql.zip "${DOWNLOAD_URL}"
     rm -rf /opt/codeql
@@ -314,40 +315,12 @@ RUN <<EOF
     usermod -a -G plugdev user
 EOF
 
-USER root
-
-# Install zephyr-dc-mcp (firmware MCP + OpenAI agent) into an isolated venv
-COPY mcp /opt/zephyr-dc-mcp-src
-RUN <<EOF
-    set -eux
-    python3 -m venv /opt/zephyr-dc-mcp/venv
-    /opt/zephyr-dc-mcp/venv/bin/pip install --upgrade pip
-    /opt/zephyr-dc-mcp/venv/bin/pip install /opt/zephyr-dc-mcp-src gcovr
-    # Ensure CLI tools from the venv are discoverable
-    ln -sf /opt/zephyr-dc-mcp/venv/bin/zephyr-dc-mcp /usr/local/bin/zephyr-dc-mcp
-    ln -sf /opt/zephyr-dc-mcp/venv/bin/gcovr /usr/local/bin/gcovr
-    chown -R user:user /opt/zephyr-dc-mcp /opt/zephyr-dc-mcp-src
-    /opt/zephyr-dc-mcp/venv/bin/python -c "import zephyr_dc_mcp; from zephyr_dc_mcp.tools import register_all_tools; register_all_tools(); from zephyr_dc_mcp.registry import list_tools; assert list_tools(); print(zephyr_dc_mcp.__version__, len(list_tools()), 'tools')"
-EOF
-
-COPY entrypoint.sh /usr/local/bin/zephyr-dc-entrypoint.sh
-COPY scripts/zephyr-dc-mcp-start.sh /usr/local/bin/zephyr-dc-mcp-start
-RUN chmod 755 /usr/local/bin/zephyr-dc-entrypoint.sh /usr/local/bin/zephyr-dc-mcp-start
-
 USER user
 
 # Set ZEPHYR_BASE so west builds are ready out-of-the-box
 ENV ZEPHYR_BASE=${ZEPHYR_WORKSPACE}/zephyr
 ENV DISPLAY=host.docker.internal:0.0
 ENV CLASSPATH=".:/usr/local/lib/antlr-4.13.2-complete.jar:${CLASSPATH}"
-ENV ZEPHYR_DC_MCP_HOST=0.0.0.0
-ENV ZEPHYR_DC_MCP_PORT=8765
-ENV ZEPHYR_DC_MCP_BIN=/opt/zephyr-dc-mcp/venv/bin/zephyr-dc-mcp
 # Optionally set default toolchain variant if not already set by base image
 # ENV ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb
-
-EXPOSE 8765
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD curl -fsS "http://127.0.0.1:${ZEPHYR_DC_MCP_PORT}/health" || exit 1
-
-ENTRYPOINT ["/usr/local/bin/zephyr-dc-entrypoint.sh"]
+USER user
