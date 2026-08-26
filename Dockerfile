@@ -114,7 +114,6 @@ RUN <<EOF
         udhcpc \
         uml-utilities \
         unzip \
-        usbip \
         whiptail \
         xxd \
         zlib1g-dev
