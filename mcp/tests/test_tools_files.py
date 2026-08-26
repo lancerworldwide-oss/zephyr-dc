@@ -20,6 +20,7 @@ def test_register_all_tools_idempotent():
     assert "west_build_start" in names
     assert "agent_run" in names
     assert "twister_run_start" in names
+    assert "semgrep_start" in names
     register_all_tools()
     assert len(list_tools()) == len(names)
 

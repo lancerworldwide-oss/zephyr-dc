@@ -302,6 +302,20 @@ RUN <<EOF
     rm -f /tmp/codeql.zip
 EOF
 
+ARG SEMGREP_VERSION=1.174.0
+RUN <<EOF
+    # Install Semgrep CE in an isolated venv (override with --build-arg SEMGREP_VERSION=<version>)
+    set -eu
+    apt-get update
+    apt-get install -y --no-install-recommends python3-venv
+    python3 -m venv /opt/semgrep
+    /opt/semgrep/bin/pip install --no-cache-dir "semgrep==${SEMGREP_VERSION}"
+    ln -sf /opt/semgrep/bin/semgrep /usr/local/bin/semgrep
+    semgrep --version
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+EOF
+
 RUN <<EOF
     # add user to the plugdev and dialout group
     if ! getent group plugdev > /dev/null; then

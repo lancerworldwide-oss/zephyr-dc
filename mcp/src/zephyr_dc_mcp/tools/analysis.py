@@ -1,4 +1,4 @@
-"""Static analysis tools: cppcheck, cpplint, flawfinder, clang-tidy, clang-format."""
+"""Static analysis tools: cppcheck, cpplint, flawfinder, semgrep, clang-tidy, clang-format."""
 
 from __future__ import annotations
 
@@ -55,6 +55,26 @@ def flawfinder_start(
     return {"ok": True, "job_id": job.job_id, "argv": job.argv}
 
 
+def semgrep_start(
+    path: str,
+    cwd: str | None = None,
+    extra_args: list[str] | None = None,
+    timeout_sec: float | None = None,
+) -> dict:
+    argv = build_argv(
+        _require("semgrep"),
+        "scan",
+        "--metrics=off",
+        "--config",
+        "auto",
+        path,
+    )
+    if extra_args:
+        argv.extend(extra_args)
+    job = get_job_manager().start(argv, cwd=cwd, timeout_sec=timeout_sec)
+    return {"ok": True, "job_id": job.job_id, "argv": job.argv}
+
+
 def clang_tidy_start(
     path: str,
     compile_commands_dir: str | None = None,
@@ -103,6 +123,7 @@ def register() -> None:
         ("cppcheck_start", cppcheck_start, "Run cppcheck as a background job."),
         ("cpplint_start", cpplint_start, "Run cpplint as a background job."),
         ("flawfinder_start", flawfinder_start, "Run flawfinder as a background job."),
+        ("semgrep_start", semgrep_start, "Run semgrep scan as a background job."),
     ]:
         register_tool(
             ToolSpec(

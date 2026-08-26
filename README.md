@@ -64,7 +64,7 @@ Do not background `/usr/local/bin/zephyr-dc-entrypoint.sh` from `postStart` — 
 
 After changing MCP install or start scripts in this repo, rebuild and push (or load) `ghcr.io/lancerworldwide-oss/zephyr-dc:latest`, then rebuild the consumer Dev Container.
 
-Useful tools include `west_build_start`, `twister_run_start`, `renode_run_start`, `cppcheck_start`, `coverage_report_start`, `doxygen_run_start`, `job_wait`, and `agent_run`.
+Useful tools include `west_build_start`, `twister_run_start`, `renode_run_start`, `cppcheck_start`, `semgrep_start`, `coverage_report_start`, `doxygen_run_start`, `job_wait`, and `agent_run`.
 
 ## OpenAI-compatible HTTP (n8n / scripts)
 
